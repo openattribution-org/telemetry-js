@@ -16,6 +16,7 @@
 export type EventType =
   // Content lifecycle
   | "content_retrieved"
+  | "content_grounded"
   | "content_displayed"
   | "content_engaged"
   | "content_cited"
@@ -63,11 +64,11 @@ export type InitiatorType = "user" | "agent";
 /**
  * Who is reporting a retrieval event.
  * - `origin`: Content owner's web server detected an AI agent/bot request.
+ * - `edge`: CDN or edge network (Cloudflare, Fastly, etc.). An edge MISS still reports telemetry.
  * - `index`: Search index or content repository that served the content.
- * - `cache`: CDN or edge layer (Cloudflare, Fastly, etc.).
  * - `agent`: The AI agent itself, reporting content it fetched.
  */
-export type SourceRole = "origin" | "index" | "cache" | "agent";
+export type SourceRole = "origin" | "edge" | "index" | "agent";
 
 /** How a cited piece of content was used in an agent response. */
 export type CitationType =
@@ -78,6 +79,74 @@ export type CitationType =
 
 /** Prominence of cited content within a response. */
 export type CitationPosition = "primary" | "supporting" | "mentioned";
+
+/** Edge platform's classification of the requesting bot. */
+export type BotCategory = "training" | "inference" | "search";
+
+/** Edge cache result for a retrieval event. */
+export type CacheStatus = "hit" | "miss" | "bypass" | "dynamic";
+
+// ---------------------------------------------------------------------------
+// Data profiles (section 4 of the specification)
+// ---------------------------------------------------------------------------
+
+/**
+ * Citation quality signals for `content_cited` events.
+ * Populate in the event's `data` field. All fields are optional.
+ */
+export interface CitationData {
+  /** How the content was used in the response. */
+  citation_type?: CitationType;
+  /** Token count of the excerpt used. */
+  excerpt_tokens?: number;
+  /** Prominence of the citation in the response. */
+  position?: CitationPosition;
+  /** SHA-256 hash of cited content for verification (format: `sha256:{hex}`). */
+  content_hash?: string;
+}
+
+/**
+ * Edge enrichment data for `content_retrieved` events with `source_role: "edge"`.
+ * CDN and edge network integrations SHOULD include these fields.
+ * All fields are optional.
+ */
+export interface EdgeEnrichment {
+  /** Request User-Agent header. */
+  user_agent?: string;
+  /** Edge platform's bot classification. */
+  bot_category?: BotCategory;
+  /** Whether the bot identity was cryptographically verified. */
+  verified?: boolean;
+  /** Edge cache result. */
+  cache_status?: CacheStatus;
+  /** HTTP response status code. */
+  response_status?: number;
+  /** Response body size in bytes. */
+  response_bytes?: number;
+  /** JA4 TLS client fingerprint. */
+  ja4?: string;
+  /** Client AS number. */
+  asn?: number;
+  /** Client AS organisation name. */
+  asn_org?: string;
+  /** ISO 3166-1 alpha-2 country code. */
+  country?: string;
+  /** SHA-256 hash of client IP (format: `sha256:{hex}`). */
+  ip_hash?: string;
+}
+
+/**
+ * Origin enrichment data for `content_retrieved` events with `source_role: "origin"`.
+ * All fields are optional.
+ */
+export interface OriginEnrichment {
+  /** Request User-Agent header. */
+  user_agent?: string;
+  /** SHA-256 hash of client IP. */
+  ip_hash?: string;
+  /** HTTP response status code. */
+  response_status?: number;
+}
 
 // ---------------------------------------------------------------------------
 // Core models

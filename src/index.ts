@@ -57,6 +57,12 @@ export type {
   SourceRole,
   CitationType,
   CitationPosition,
+  BotCategory,
+  CacheStatus,
+  // Data profiles
+  CitationData,
+  EdgeEnrichment,
+  OriginEnrichment,
 } from "./types.js";
 
 export type { ContentAttribution, ContentAttributionRetrieved, ContentAttributionCited } from "./acp.js";

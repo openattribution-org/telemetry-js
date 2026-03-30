@@ -289,7 +289,7 @@ function isTransientError(err: unknown): boolean {
 
 function sessionToWire(session: TelemetrySession): Record<string, unknown> {
   return {
-    schema_version: session.schemaVersion ?? "0.4",
+    schema_version: session.schemaVersion ?? "0.1",
     session_id: session.sessionId,
     initiator_type: session.initiatorType ?? "user",
     initiator:

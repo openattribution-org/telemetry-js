@@ -267,4 +267,12 @@ export interface TelemetryClientOptions {
   timeout?: number;
   /** Maximum retry attempts for transient errors. Default: 3. */
   maxRetries?: number;
+  /**
+   * Default `source_role` to stamp on every emitted event when the caller
+   * does not set one explicitly. Agent SDKs should set this to `"agent"`,
+   * CDN/edge integrations to `"edge"`, origin instrumentation to `"origin"`.
+   *
+   * Per-event `sourceRole` always wins when provided.
+   */
+  defaultSourceRole?: SourceRole;
 }

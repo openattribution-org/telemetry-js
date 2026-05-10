@@ -112,6 +112,7 @@ export class TelemetryClient {
   private readonly failSilently: boolean;
   private readonly timeout: number;
   private readonly maxRetries: number;
+  private readonly defaultSourceRole: SourceRole | undefined;
 
   constructor(options: TelemetryClientOptions) {
     this.endpoint = options.endpoint.replace(/\/$/, "");
@@ -119,6 +120,7 @@ export class TelemetryClient {
     this.failSilently = options.failSilently ?? true;
     this.timeout = options.timeout ?? 30_000;
     this.maxRetries = options.maxRetries ?? 3;
+    this.defaultSourceRole = options.defaultSourceRole;
   }
 
   private headers(): Record<string, string> {
@@ -231,9 +233,15 @@ export class TelemetryClient {
     events: TelemetryEvent[],
   ): Promise<void> {
     if (sessionId == null || events.length === 0) return;
+    const defaultRole = this.defaultSourceRole;
+    const stamped = defaultRole
+      ? events.map((e) =>
+          e.sourceRole == null ? { ...e, sourceRole: defaultRole } : e,
+        )
+      : events;
     await this.post("/events", {
       session_id: sessionId,
-      events: events.map(eventToWire),
+      events: stamped.map(eventToWire),
     });
   }
 

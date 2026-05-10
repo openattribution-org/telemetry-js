@@ -103,6 +103,7 @@ export class MCPSessionTracker {
       id: crypto.randomUUID(),
       type: "content_retrieved" as const,
       timestamp: now,
+      sourceRole: "agent" as const,
       contentUrl: url,
     }));
 
@@ -136,6 +137,7 @@ export class MCPSessionTracker {
       id: crypto.randomUUID(),
       type: "content_cited" as const,
       timestamp: now,
+      sourceRole: "agent" as const,
       contentUrl: url,
       data: {
         ...(options.citationType != null && { citation_type: options.citationType }),
@@ -181,6 +183,7 @@ export class MCPSessionTracker {
       id: crypto.randomUUID(),
       type: "content_engaged" as const,
       timestamp: now,
+      sourceRole: "agent" as const,
       contentUrl: url,
       data: {
         ...(options.interactionType != null && {

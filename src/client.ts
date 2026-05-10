@@ -179,7 +179,7 @@ export class TelemetryClient {
    * @returns Session ID string, or null on silent failure.
    */
   async startSession(options: StartSessionOptions = {}): Promise<string | null> {
-    const result = await this.post("/session/start", {
+    const result = await this.post("/sessions/start", {
       initiator_type: options.initiatorType ?? "user",
       initiator:
         options.initiator != null ? initiatorToWire(options.initiator) : null,
@@ -245,7 +245,7 @@ export class TelemetryClient {
     outcome: SessionOutcome,
   ): Promise<void> {
     if (sessionId == null) return;
-    await this.post("/session/end", {
+    await this.post("/sessions/end", {
       session_id: sessionId,
       outcome: outcomeToWire(outcome),
     });
@@ -260,7 +260,7 @@ export class TelemetryClient {
    * @returns Server-assigned session ID, or null on silent failure.
    */
   async uploadSession(session: TelemetrySession): Promise<string | null> {
-    const result = await this.post("/session/bulk", sessionToWire(session)) as
+    const result = await this.post("/sessions/bulk", sessionToWire(session)) as
       | { session_id?: string }
       | null;
     return result?.session_id ?? null;

@@ -199,8 +199,8 @@ export interface TelemetryEvent {
   timestamp: string;
   /** Who is reporting this event. SHOULD be set on content_retrieved events. */
   sourceRole?: SourceRole;
-  /** Correlation ID from OA-Telemetry-ID header for cross-observer deduplication. */
-  oaTelemetryId?: string;
+  /** Correlation ID from Content-Telemetry-ID header for cross-observer deduplication. */
+  contentTelemetryId?: string;
   /** Associated content URL, if applicable. */
   contentUrl?: string;
   /** Associated product UUID, if applicable. */

@@ -45,7 +45,7 @@ function eventToWire(event: TelemetryEvent): Record<string, unknown> {
     type: event.type,
     timestamp: event.timestamp,
     source_role: event.sourceRole,
-    oa_telemetry_id: event.oaTelemetryId,
+    content_telemetry_id: event.contentTelemetryId,
     content_url: event.contentUrl,
     product_id: event.productId,
     turn: event.turn != null ? turnToWire(event.turn) : undefined,
@@ -209,7 +209,7 @@ export class TelemetryClient {
       contentUrl?: string;
       productId?: string;
       sourceRole?: SourceRole;
-      oaTelemetryId?: string;
+      contentTelemetryId?: string;
       turn?: ConversationTurn;
       data?: Record<string, unknown>;
     } = {},

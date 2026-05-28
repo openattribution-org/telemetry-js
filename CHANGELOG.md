@@ -8,7 +8,7 @@ Breaking: rename correlation header and field to neutral name.
 - Wire JSON field `oa_telemetry_id` → `content_telemetry_id`
 - TypeScript field `oaTelemetryId` → `contentTelemetryId`
 
-Migration: update any code passing `oaTelemetryId` to use `contentTelemetryId`. The server accepts the old name during a 30-day transition window.
+Migration: update any code passing `oaTelemetryId` to use `contentTelemetryId`. This is a hard rename with no compatibility window - the old name is no longer accepted.
 
 ## 0.3.1
 

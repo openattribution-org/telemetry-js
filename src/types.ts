@@ -236,8 +236,8 @@ export interface ConversationTurn {
 
 /** Single telemetry event within a session. */
 export interface TelemetryEvent {
-  /** Unique event identifier (UUID v4). */
-  id: string;
+  /** Unique event identifier (UUID v4). Optional: the server generates one when absent (spec 5.2). */
+  id?: string;
   type: EventType;
   /** UTC timestamp in ISO 8601 format. */
   timestamp: string;

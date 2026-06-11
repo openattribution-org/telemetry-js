@@ -55,7 +55,7 @@ describe("MCPSessionTracker.trackRetrieved", () => {
       "https://b.com",
     ])
     expect(mockClient.recordEvents).toHaveBeenCalledTimes(1)
-    const [sessionId, events] = mockClient.recordEvents.mock.calls[0]
+    const [sessionId, events] = mockClient.recordEvents.mock.calls[0]!
     expect(sessionId).toBe("session-uuid-123")
     expect(events).toHaveLength(2)
     expect(events[0].type).toBe("content_retrieved")
@@ -69,7 +69,7 @@ describe("MCPSessionTracker.trackCited", () => {
     const t = tracker()
     await t.trackCited("user-abc", ["https://a.com"])
     expect(mockClient.recordEvents).toHaveBeenCalledTimes(1)
-    const [, events] = mockClient.recordEvents.mock.calls[0]
+    const [, events] = mockClient.recordEvents.mock.calls[0]!
     expect(events).toHaveLength(1)
     expect(events[0].type).toBe("content_cited")
     expect(events[0].contentUrl).toBe("https://a.com")

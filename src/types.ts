@@ -215,7 +215,8 @@ export interface UserContext {
  * Populate only the fields appropriate for your privacy level.
  */
 export interface ConversationTurn {
-  privacyLevel?: PrivacyLevel;
+  /** Required (spec 5.4). Fields above this level are stripped before sending. */
+  privacyLevel: PrivacyLevel;
   // full / summary level
   queryText?: string;
   responseText?: string;

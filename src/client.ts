@@ -28,10 +28,11 @@ function turnToWire(turn: ConversationTurn): Record<string, unknown> {
   // privacy_level (spec 5.5): query/response text is gated to full and
   // summary; intent, topics, response classification and platform
   // metadata are gated above minimal. Stripping here keeps a privacy
-  // violation from ever reaching the wire.
+  // violation from ever reaching the wire. A missing level (possible
+  // from untyped JS callers) fails closed to minimal.
   const level = turn.privacyLevel;
-  const textAllowed = level == null || level === "full" || level === "summary";
-  const aboveMinimal = level == null || level !== "minimal";
+  const textAllowed = level === "full" || level === "summary";
+  const aboveMinimal = textAllowed || level === "intent";
   return {
     privacy_level: turn.privacyLevel,
     query_text: textAllowed ? turn.queryText : undefined,

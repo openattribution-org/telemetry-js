@@ -1,7 +1,7 @@
 {
   "name": "@openattribution/telemetry",
   "version": "0.4.0",
-  "description": "OpenAttribution Telemetry SDK for TypeScript/JavaScript — track content attribution in AI agent interactions",
+  "description": "OpenAttribution SDK for the Content Telemetry standard (TypeScript/JavaScript) — track content attribution in AI agent interactions",
   "license": "Apache-2.0",
   "author": "OpenAttribution Project",
   "homepage": "https://openattribution.org",

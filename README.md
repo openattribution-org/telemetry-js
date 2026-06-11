@@ -1,6 +1,6 @@
 # @openattribution/telemetry
 
-TypeScript/JavaScript SDK for [OpenAttribution Telemetry](https://github.com/openattribution-org/telemetry) — track content attribution in AI agent interactions.
+TypeScript/JavaScript SDK for the [Content Telemetry](https://github.com/SPUR-Coalition/telemetry) standard — track content attribution in AI agent interactions.
 
 Works in Node.js >= 18, Deno, browsers, and Edge runtimes (Vercel, Cloudflare Workers). Zero runtime dependencies.
 
@@ -202,7 +202,7 @@ const resultUrls = extractResultUrls(searchResults);
 
 ## Specification
 
-The OpenAttribution Telemetry standard is maintained at [openattribution-org/telemetry](https://github.com/openattribution-org/telemetry).
+The Content Telemetry standard is stewarded by the SPUR Coalition: [SPUR-Coalition/telemetry](https://github.com/SPUR-Coalition/telemetry). Schemas resolve at [contenttelemetry.org](https://contenttelemetry.org).
 
 This SDK vendors a copy of `schema.json` for reference.
 

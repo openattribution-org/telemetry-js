@@ -24,18 +24,28 @@ const TRANSIENT_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 // ---------------------------------------------------------------------------
 
 function turnToWire(turn: ConversationTurn): Record<string, unknown> {
+  // An emitter MUST NOT include a field above the turn's declared
+  // privacy_level (spec 5.5): query/response text is gated to full and
+  // summary; intent, topics, response classification and platform
+  // metadata are gated above minimal. Stripping here keeps a privacy
+  // violation from ever reaching the wire.
+  const level = turn.privacyLevel;
+  const textAllowed = level == null || level === "full" || level === "summary";
+  const aboveMinimal = level == null || level !== "minimal";
   return {
     privacy_level: turn.privacyLevel,
-    query_text: turn.queryText,
-    response_text: turn.responseText,
-    query_intent: turn.queryIntent,
-    response_type: turn.responseType,
-    topics: turn.topics,
+    query_text: textAllowed ? turn.queryText : undefined,
+    response_text: textAllowed ? turn.responseText : undefined,
+    query_intent: aboveMinimal ? turn.queryIntent : undefined,
+    response_type: aboveMinimal ? turn.responseType : undefined,
+    response_mode: aboveMinimal ? turn.responseMode : undefined,
+    topics: aboveMinimal ? turn.topics : undefined,
+    ad_rendered: aboveMinimal ? turn.adRendered : undefined,
     content_urls_retrieved: turn.contentUrlsRetrieved,
     content_urls_cited: turn.contentUrlsCited,
     query_tokens: turn.queryTokens,
     response_tokens: turn.responseTokens,
-    model_id: turn.modelId,
+    model_id: aboveMinimal ? turn.modelId : undefined,
   };
 }
 
@@ -45,8 +55,11 @@ function eventToWire(event: TelemetryEvent): Record<string, unknown> {
     type: event.type,
     timestamp: event.timestamp,
     source_role: event.sourceRole,
+    turn_id: event.turnId,
     content_telemetry_id: event.contentTelemetryId,
     content_url: event.contentUrl,
+    content_id: event.contentId,
+    license_ref: event.licenseRef,
     product_id: event.productId,
     turn: event.turn != null ? turnToWire(event.turn) : undefined,
     data: event.data ?? {},
@@ -297,8 +310,10 @@ function isTransientError(err: unknown): boolean {
 
 function sessionToWire(session: TelemetrySession): Record<string, unknown> {
   return {
+    document_type: session.documentType ?? "session",
     schema_version: session.schemaVersion ?? "0.1",
     session_id: session.sessionId,
+    conformance_level: session.conformanceLevel,
     initiator_type: session.initiatorType ?? "user",
     initiator:
       session.initiator != null ? initiatorToWire(session.initiator) : null,

@@ -2,6 +2,8 @@
 
 TypeScript/JavaScript SDK for the [Content Telemetry](https://github.com/SPUR-Coalition/telemetry) standard — track content attribution in AI agent interactions.
 
+SDK versions track the standard: 0.1.x implements Content Telemetry 0.1.
+
 Works in Node.js >= 18, Deno, browsers, and Edge runtimes (Vercel, Cloudflare Workers). Zero runtime dependencies.
 
 ## Install

@@ -1,5 +1,5 @@
 /**
- * OpenAttribution Telemetry — HTTP client.
+ * Content Telemetry — HTTP client.
  *
  * Zero dependencies — uses native fetch (Node 18+, Deno, browsers, Edge).
  */
@@ -19,23 +19,40 @@ import type {
 
 const TRANSIENT_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
+/** Content Telemetry schema version emitted on wire documents (spec 7.1). */
+const SCHEMA_VERSION = "0.1";
+
 // ---------------------------------------------------------------------------
 // Wire format helpers (camelCase → snake_case for the JSON body)
 // ---------------------------------------------------------------------------
 
 function turnToWire(turn: ConversationTurn): Record<string, unknown> {
+  // An emitter MUST NOT include a field above the turn's declared
+  // privacy_level (spec 5.5): query/response text is gated to full and
+  // summary; intent, topics, response classification and platform
+  // metadata are gated above minimal. Stripping here keeps a privacy
+  // violation from ever reaching the wire. A missing level (possible
+  // from untyped JS callers) fails closed to minimal.
+  const level = turn.privacyLevel;
+  const textAllowed = level === "full" || level === "summary";
+  const aboveMinimal = textAllowed || level === "intent";
   return {
-    privacy_level: turn.privacyLevel,
-    query_text: turn.queryText,
-    response_text: turn.responseText,
-    query_intent: turn.queryIntent,
-    response_type: turn.responseType,
-    topics: turn.topics,
+    // An absent or unrecognised level already strips as minimal above;
+    // the wire value must follow, since privacy_level is required and
+    // closed-enum on ConversationTurn.
+    privacy_level: aboveMinimal || level === "minimal" ? level : "minimal",
+    query_text: textAllowed ? turn.queryText : undefined,
+    response_text: textAllowed ? turn.responseText : undefined,
+    query_intent: aboveMinimal ? turn.queryIntent : undefined,
+    response_type: aboveMinimal ? turn.responseType : undefined,
+    response_mode: aboveMinimal ? turn.responseMode : undefined,
+    topics: aboveMinimal ? turn.topics : undefined,
+    ad_rendered: aboveMinimal ? turn.adRendered : undefined,
     content_urls_retrieved: turn.contentUrlsRetrieved,
     content_urls_cited: turn.contentUrlsCited,
     query_tokens: turn.queryTokens,
     response_tokens: turn.responseTokens,
-    model_id: turn.modelId,
+    model_id: aboveMinimal ? turn.modelId : undefined,
   };
 }
 
@@ -45,8 +62,11 @@ function eventToWire(event: TelemetryEvent): Record<string, unknown> {
     type: event.type,
     timestamp: event.timestamp,
     source_role: event.sourceRole,
+    turn_id: event.turnId,
     content_telemetry_id: event.contentTelemetryId,
     content_url: event.contentUrl,
+    content_id: event.contentId,
+    license_ref: event.licenseRef,
     product_id: event.productId,
     turn: event.turn != null ? turnToWire(event.turn) : undefined,
     data: event.data ?? {},
@@ -84,7 +104,7 @@ function outcomeToWire(o: SessionOutcome): Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 /**
- * Async client for recording OpenAttribution telemetry.
+ * Async client for recording Content Telemetry sessions and events.
  *
  * Works in Node.js ≥ 18, Deno, browsers, and Edge runtimes (Vercel, Cloudflare).
  *
@@ -182,9 +202,9 @@ export class TelemetryClient {
    */
   async startSession(options: StartSessionOptions = {}): Promise<string | null> {
     const result = await this.post("/sessions/start", {
-      initiator_type: options.initiatorType ?? "user",
+      initiator_type: options.initiatorType,
       initiator:
-        options.initiator != null ? initiatorToWire(options.initiator) : null,
+        options.initiator != null ? initiatorToWire(options.initiator) : undefined,
       content_scope: options.contentScope,
       agent_id: options.agentId,
       external_session_id: options.externalSessionId,
@@ -240,6 +260,8 @@ export class TelemetryClient {
         )
       : events;
     await this.post("/events", {
+      document_type: "event_batch",
+      schema_version: SCHEMA_VERSION,
       session_id: sessionId,
       events: stamped.map(eventToWire),
     });
@@ -297,11 +319,13 @@ function isTransientError(err: unknown): boolean {
 
 function sessionToWire(session: TelemetrySession): Record<string, unknown> {
   return {
-    schema_version: session.schemaVersion ?? "0.1",
+    document_type: session.documentType ?? "session",
+    schema_version: session.schemaVersion ?? SCHEMA_VERSION,
     session_id: session.sessionId,
-    initiator_type: session.initiatorType ?? "user",
+    conformance_level: session.conformanceLevel,
+    initiator_type: session.initiatorType,
     initiator:
-      session.initiator != null ? initiatorToWire(session.initiator) : null,
+      session.initiator != null ? initiatorToWire(session.initiator) : undefined,
     agent_id: session.agentId,
     content_scope: session.contentScope,
     manifest_ref: session.manifestRef,

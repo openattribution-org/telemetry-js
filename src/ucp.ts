@@ -1,5 +1,5 @@
 /**
- * OpenAttribution Telemetry — UCP (Universal Checkout Protocol) bridge.
+ * Content Telemetry — UCP (Universal Checkout Protocol) bridge.
  *
  * Converts a TelemetrySession into the UCP attribution extension object.
  *

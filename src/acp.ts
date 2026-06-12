@@ -1,5 +1,5 @@
 /**
- * OpenAttribution Telemetry — ACP (Agentic Commerce Protocol) bridge.
+ * Content Telemetry — ACP (Agentic Commerce Protocol) bridge.
  *
  * Converts a TelemetrySession into the `content_attribution` object
  * defined in the ACP RFC. Include this in a CheckoutSessionCreateRequest

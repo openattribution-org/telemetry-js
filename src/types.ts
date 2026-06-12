@@ -1,29 +1,36 @@
 /**
- * OpenAttribution Telemetry — TypeScript types.
+ * Content Telemetry — TypeScript types.
  *
  * Mirrors the Python schema (schema.py) exactly. JSON wire format uses
  * snake_case; these TypeScript types use camelCase with explicit mapping
  * in the client layer.
  *
- * Specification: https://openattribution.org/telemetry
+ * Specification: https://contenttelemetry.org
  */
 
 // ---------------------------------------------------------------------------
 // Enumerations
 // ---------------------------------------------------------------------------
 
-/** Supported event types for telemetry tracking. */
+/**
+ * Supported event types for telemetry tracking.
+ *
+ * The content lifecycle and conversation types are the Content Telemetry
+ * standard's core set (spec 5.3). The commerce types are an OpenAttribution
+ * extension: they are not in the standard's core event enum, and only
+ * consumers that support the OA commerce profile accept them.
+ */
 export type EventType =
-  // Content lifecycle
+  // Content lifecycle (Content Telemetry core)
   | "content_retrieved"
   | "content_grounded"
   | "content_displayed"
   | "content_engaged"
   | "content_cited"
-  // Conversation
+  // Conversation (Content Telemetry core)
   | "turn_started"
   | "turn_completed"
-  // Commerce
+  // Commerce (OpenAttribution extension, not core)
   | "product_viewed"
   | "product_compared"
   | "cart_add"
@@ -44,19 +51,33 @@ export type OutcomeType = "conversion" | "abandonment" | "browse";
  */
 export type PrivacyLevel = "full" | "summary" | "intent" | "minimal";
 
-/** Standardised intent categories for conversation classification. */
+/**
+ * Intent categories for conversation classification.
+ *
+ * The first group is the Content Telemetry core set (spec 5.6). The second
+ * group is commerce-profile extension values; consumers MUST tolerate
+ * unknown values, so emitting them is conformant.
+ */
 export type IntentCategory =
-  | "product_research"
+  // Core (spec 5.6)
+  | "question"
+  | "explanation"
   | "comparison"
   | "how_to"
   | "troubleshooting"
-  | "general_question"
+  | "fact_check"
+  | "analysis"
+  | "opinion_seeking"
+  | "creative"
   | "purchase_intent"
+  | "chitchat"
+  | "other"
+  // Commerce extension
+  | "product_research"
+  | "general_question"
   | "price_check"
   | "availability_check"
-  | "review_seeking"
-  | "chitchat"
-  | "other";
+  | "review_seeking";
 
 /** Actor type for the session initiator. */
 export type InitiatorType = "user" | "agent";
@@ -70,15 +91,55 @@ export type InitiatorType = "user" | "agent";
  */
 export type SourceRole = "origin" | "edge" | "index" | "agent";
 
-/** How a cited piece of content was used in an agent response. */
+/**
+ * How a cited piece of content was used in an agent response.
+ * Use `unclassified` rather than forcing a classification when the agent
+ * cannot confidently determine it (spec 6.5).
+ */
 export type CitationType =
   | "direct_quote"
   | "paraphrase"
   | "reference"
-  | "contradiction";
+  | "contradiction"
+  | "unclassified";
 
 /** Prominence of cited content within a response. */
-export type CitationPosition = "primary" | "supporting" | "mentioned";
+export type CitationPosition =
+  | "primary"
+  | "supporting"
+  | "mentioned"
+  | "unclassified";
+
+/**
+ * How the user acted on content (spec 6.7). `link_click` is the primary
+ * clickthrough signal; `agent_navigate` is its agent-mediated counterpart.
+ * Custom string values are permitted; consumers MUST tolerate unknown values.
+ */
+export type EngagementType =
+  | "link_click"
+  | "expand"
+  | "copy"
+  | "share"
+  | "agent_navigate"
+  | (string & {});
+
+/**
+ * Emitter capability tier (spec 5.7): each level proves the emitter
+ * produces that event and everything below it. Informational on session
+ * documents; the authoritative declaration lives in the emitter's manifest.
+ */
+export type ConformanceLevel = "retrieval" | "grounding" | "citation";
+
+/**
+ * Product surface or generation mode (spec 5.4.1). Custom string values
+ * are permitted; consumers MUST tolerate unknown values.
+ */
+export type ResponseMode =
+  | "standard"
+  | "deep_research"
+  | "search"
+  | "code_generation"
+  | (string & {});
 
 /** Edge platform's classification of the requesting bot. */
 export type BotCategory = "training" | "inference" | "search";
@@ -174,14 +235,18 @@ export interface UserContext {
  * Populate only the fields appropriate for your privacy level.
  */
 export interface ConversationTurn {
-  privacyLevel?: PrivacyLevel;
+  /** Required (spec 5.4). Fields above this level are stripped before sending. */
+  privacyLevel: PrivacyLevel;
   // full / summary level
   queryText?: string;
   responseText?: string;
   // intent level
   queryIntent?: IntentCategory;
   responseType?: string;
+  responseMode?: ResponseMode;
   topics?: string[];
+  /** Whether advertising was displayed alongside the response (intent level and above). */
+  adRendered?: boolean;
   // minimal level (always safe)
   contentUrlsRetrieved?: string[];
   contentUrlsCited?: string[];
@@ -192,18 +257,24 @@ export interface ConversationTurn {
 
 /** Single telemetry event within a session. */
 export interface TelemetryEvent {
-  /** Unique event identifier (UUID v4). */
-  id: string;
+  /** Unique event identifier (UUID v4). Optional: the server generates one when absent (spec 5.2). */
+  id?: string;
   type: EventType;
   /** UTC timestamp in ISO 8601 format. */
   timestamp: string;
   /** Who is reporting this event. SHOULD be set on content_retrieved events. */
   sourceRole?: SourceRole;
+  /** Associates this event with a conversation turn (spec 5.2.1). */
+  turnId?: string;
   /** Correlation ID from Content-Telemetry-ID header for cross-observer deduplication. */
   contentTelemetryId?: string;
   /** Associated content URL, if applicable. */
   contentUrl?: string;
-  /** Associated product UUID, if applicable. */
+  /** Stable content identifier (CMS ID, DOI, ISCC, catalogue ID; spec 4.5). Every content event MUST carry contentUrl or contentId. */
+  contentId?: string;
+  /** Reference to the content access licence (spec 5.2.3). */
+  licenseRef?: string;
+  /** Associated product UUID, if applicable (OpenAttribution extension). */
   productId?: string;
   /** Conversation turn data for turn_started/turn_completed events. */
   turn?: ConversationTurn;
@@ -237,8 +308,12 @@ export interface StartSessionOptions {
 
 /** Complete telemetry session (for bulk upload). */
 export interface TelemetrySession {
+  /** Document discriminator; "session" on the wire (spec 7.1). */
+  documentType?: "session";
   schemaVersion?: string;
   sessionId: string;
+  /** Informational conformance level advertised by this emitter (spec 5.7). */
+  conformanceLevel?: ConformanceLevel;
   initiatorType?: InitiatorType;
   initiator?: Initiator;
   agentId?: string;
@@ -254,7 +329,7 @@ export interface TelemetrySession {
 
 /** Options for TelemetryClient. */
 export interface TelemetryClientOptions {
-  /** Base URL of the OpenAttribution Telemetry server. */
+  /** Base URL of the Content Telemetry server. */
   endpoint: string;
   /** API key sent as X-API-Key header. */
   apiKey?: string;

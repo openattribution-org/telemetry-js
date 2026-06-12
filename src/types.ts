@@ -1,29 +1,36 @@
 /**
- * OpenAttribution Telemetry — TypeScript types.
+ * Content Telemetry — TypeScript types.
  *
  * Mirrors the Python schema (schema.py) exactly. JSON wire format uses
  * snake_case; these TypeScript types use camelCase with explicit mapping
  * in the client layer.
  *
- * Specification: https://openattribution.org/telemetry
+ * Specification: https://contenttelemetry.org
  */
 
 // ---------------------------------------------------------------------------
 // Enumerations
 // ---------------------------------------------------------------------------
 
-/** Supported event types for telemetry tracking. */
+/**
+ * Supported event types for telemetry tracking.
+ *
+ * The content lifecycle and conversation types are the Content Telemetry
+ * standard's core set (spec 5.3). The commerce types are an OpenAttribution
+ * extension: they are not in the standard's core event enum, and only
+ * consumers that support the OA commerce profile accept them.
+ */
 export type EventType =
-  // Content lifecycle
+  // Content lifecycle (Content Telemetry core)
   | "content_retrieved"
   | "content_grounded"
   | "content_displayed"
   | "content_engaged"
   | "content_cited"
-  // Conversation
+  // Conversation (Content Telemetry core)
   | "turn_started"
   | "turn_completed"
-  // Commerce
+  // Commerce (OpenAttribution extension, not core)
   | "product_viewed"
   | "product_compared"
   | "cart_add"
@@ -102,6 +109,19 @@ export type CitationPosition =
   | "supporting"
   | "mentioned"
   | "unclassified";
+
+/**
+ * How the user acted on content (spec 6.7). `link_click` is the primary
+ * clickthrough signal; `agent_navigate` is its agent-mediated counterpart.
+ * Custom string values are permitted; consumers MUST tolerate unknown values.
+ */
+export type EngagementType =
+  | "link_click"
+  | "expand"
+  | "copy"
+  | "share"
+  | "agent_navigate"
+  | (string & {});
 
 /**
  * Emitter capability tier (spec 5.7): each level proves the emitter
@@ -309,7 +329,7 @@ export interface TelemetrySession {
 
 /** Options for TelemetryClient. */
 export interface TelemetryClientOptions {
-  /** Base URL of the OpenAttribution Telemetry server. */
+  /** Base URL of the Content Telemetry server. */
   endpoint: string;
   /** API key sent as X-API-Key header. */
   apiKey?: string;

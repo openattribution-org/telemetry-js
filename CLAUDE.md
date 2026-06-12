@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-OpenAttribution Telemetry SDK for TypeScript/JavaScript - zero runtime dependencies.
+OpenAttribution SDK for the Content Telemetry standard, TypeScript/JavaScript - zero runtime dependencies.
 
 ## Tech stack
 

@@ -1,5 +1,5 @@
 /**
- * OpenAttribution Telemetry — content URL extraction utilities.
+ * Content Telemetry — content URL extraction utilities.
  *
  * Helpers for extracting content URLs from AI-generated text, so they
  * can be recorded as telemetry events without manual instrumentation.
@@ -97,7 +97,7 @@ export function extractResultUrls(
  *   const url = searchParams.get("url");
  *   const sessionId = searchParams.get("session_id") ?? undefined;
  *   if (!url) return new Response("Missing url", { status: 400 });
- *   void tracker.trackEngaged(sessionId, [url], { interactionType: "click" });
+ *   void tracker.trackEngaged(sessionId, [url], { engagementType: "link_click" });
  *   return Response.redirect(url, 302);
  * }
  * ```

@@ -1,10 +1,10 @@
 /**
  * @openattribution/telemetry
  *
- * OpenAttribution Telemetry SDK for TypeScript/JavaScript.
+ * OpenAttribution SDK for the Content Telemetry standard (TypeScript/JavaScript).
  * Track content attribution in AI agent interactions.
  *
- * Specification: https://openattribution.org/telemetry
+ * Specification: https://contenttelemetry.org
  *
  * @example
  * ```ts
@@ -57,6 +57,9 @@ export type {
   SourceRole,
   CitationType,
   CitationPosition,
+  EngagementType,
+  ConformanceLevel,
+  ResponseMode,
   BotCategory,
   CacheStatus,
   // Data profiles

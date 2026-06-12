@@ -4,7 +4,7 @@ TypeScript/JavaScript SDK for the [Content Telemetry](https://github.com/SPUR-Co
 
 SDK versions track the standard: 0.1.x implements Content Telemetry 0.1.
 
-Works in Node.js >= 18, Deno, browsers, and Edge runtimes (Vercel, Cloudflare Workers). Zero runtime dependencies.
+Works in Node.js >= 20, Deno, browsers, and Edge runtimes (Vercel, Cloudflare Workers). Zero runtime dependencies.
 
 ## Install
 
@@ -161,7 +161,7 @@ await ucpClient.completeCheckout({
 ```ts
 await tracker.trackRetrieved(sessionId, productUrls);
 await tracker.trackCited(sessionId, citedUrls, { citationType: "reference" });
-await tracker.trackEngaged(sessionId, [clickedUrl], { interactionType: "click" });
+await tracker.trackEngaged(sessionId, [clickedUrl], { engagementType: "link_click" });
 await tracker.trackCheckout(sessionId, { type: "completed", valueAmount: 4999, currency: "USD" });
 ```
 
@@ -181,7 +181,7 @@ export async function GET(req: Request) {
   const url = searchParams.get("url");
   const sessionId = searchParams.get("session_id") ?? undefined;
   if (!url) return new Response("Missing url", { status: 400 });
-  void tracker.trackEngaged(sessionId, [url], { interactionType: "click" });
+  void tracker.trackEngaged(sessionId, [url], { engagementType: "link_click" });
   return Response.redirect(url, 302);
 }
 ```
@@ -205,8 +205,6 @@ const resultUrls = extractResultUrls(searchResults);
 ## Specification
 
 The Content Telemetry standard is stewarded by the SPUR Coalition: [SPUR-Coalition/telemetry](https://github.com/SPUR-Coalition/telemetry). Schemas resolve at [contenttelemetry.org](https://contenttelemetry.org).
-
-This SDK vendors a copy of `schema.json` for reference.
 
 ## Licence
 

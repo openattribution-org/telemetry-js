@@ -76,6 +76,25 @@ describe("MCPSessionTracker.trackCited", () => {
   })
 })
 
+describe("MCPSessionTracker.trackEngaged", () => {
+  it("emits content_engaged with data.engagement_type per spec 6.7", async () => {
+    const t = tracker()
+    await t.trackEngaged("user-abc", ["https://a.com"], {
+      engagementType: "link_click",
+    })
+    const [, events] = mockClient.recordEvents.mock.calls[0]!
+    expect(events[0].type).toBe("content_engaged")
+    expect(events[0].data).toEqual({ engagement_type: "link_click" })
+  })
+
+  it("omits engagement_type when no engagementType is given", async () => {
+    const t = tracker()
+    await t.trackEngaged("user-abc", ["https://a.com"])
+    const [, events] = mockClient.recordEvents.mock.calls[0]!
+    expect(events[0].data).toEqual({})
+  })
+})
+
 describe("MCPSessionTracker.sessionCount", () => {
   it("returns the correct count after sessions are created", async () => {
     const t = tracker()

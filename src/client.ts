@@ -1,5 +1,5 @@
 /**
- * OpenAttribution Telemetry — HTTP client.
+ * Content Telemetry — HTTP client.
  *
  * Zero dependencies — uses native fetch (Node 18+, Deno, browsers, Edge).
  */
@@ -19,6 +19,9 @@ import type {
 
 const TRANSIENT_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
+/** Content Telemetry schema version emitted on wire documents (spec 7.1). */
+const SCHEMA_VERSION = "0.1";
+
 // ---------------------------------------------------------------------------
 // Wire format helpers (camelCase → snake_case for the JSON body)
 // ---------------------------------------------------------------------------
@@ -34,7 +37,10 @@ function turnToWire(turn: ConversationTurn): Record<string, unknown> {
   const textAllowed = level === "full" || level === "summary";
   const aboveMinimal = textAllowed || level === "intent";
   return {
-    privacy_level: turn.privacyLevel,
+    // An absent or unrecognised level already strips as minimal above;
+    // the wire value must follow, since privacy_level is required and
+    // closed-enum on ConversationTurn.
+    privacy_level: aboveMinimal || level === "minimal" ? level : "minimal",
     query_text: textAllowed ? turn.queryText : undefined,
     response_text: textAllowed ? turn.responseText : undefined,
     query_intent: aboveMinimal ? turn.queryIntent : undefined,
@@ -98,7 +104,7 @@ function outcomeToWire(o: SessionOutcome): Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 /**
- * Async client for recording OpenAttribution telemetry.
+ * Async client for recording Content Telemetry sessions and events.
  *
  * Works in Node.js ≥ 18, Deno, browsers, and Edge runtimes (Vercel, Cloudflare).
  *
@@ -196,9 +202,9 @@ export class TelemetryClient {
    */
   async startSession(options: StartSessionOptions = {}): Promise<string | null> {
     const result = await this.post("/sessions/start", {
-      initiator_type: options.initiatorType ?? "user",
+      initiator_type: options.initiatorType,
       initiator:
-        options.initiator != null ? initiatorToWire(options.initiator) : null,
+        options.initiator != null ? initiatorToWire(options.initiator) : undefined,
       content_scope: options.contentScope,
       agent_id: options.agentId,
       external_session_id: options.externalSessionId,
@@ -254,6 +260,8 @@ export class TelemetryClient {
         )
       : events;
     await this.post("/events", {
+      document_type: "event_batch",
+      schema_version: SCHEMA_VERSION,
       session_id: sessionId,
       events: stamped.map(eventToWire),
     });
@@ -312,12 +320,12 @@ function isTransientError(err: unknown): boolean {
 function sessionToWire(session: TelemetrySession): Record<string, unknown> {
   return {
     document_type: session.documentType ?? "session",
-    schema_version: session.schemaVersion ?? "0.1",
+    schema_version: session.schemaVersion ?? SCHEMA_VERSION,
     session_id: session.sessionId,
     conformance_level: session.conformanceLevel,
-    initiator_type: session.initiatorType ?? "user",
+    initiator_type: session.initiatorType,
     initiator:
-      session.initiator != null ? initiatorToWire(session.initiator) : null,
+      session.initiator != null ? initiatorToWire(session.initiator) : undefined,
     agent_id: session.agentId,
     content_scope: session.contentScope,
     manifest_ref: session.manifestRef,

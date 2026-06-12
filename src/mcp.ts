@@ -1,5 +1,5 @@
 /**
- * OpenAttribution Telemetry — MCP session tracker.
+ * Content Telemetry — MCP session tracker.
  *
  * Provides session continuity across stateless MCP tool calls.
  * The calling agent passes a stable `sessionId` string; this module
@@ -25,7 +25,7 @@
  * ```
  */
 
-import type { TelemetryEvent } from "./types.js";
+import type { EngagementType, TelemetryEvent } from "./types.js";
 import type { TelemetryClient } from "./client.js";
 
 /**
@@ -163,7 +163,7 @@ export class MCPSessionTracker {
    * ```ts
    * // In a redirect/tracking endpoint
    * await tracker.trackEngaged(sessionId, [productUrl], {
-   *   interactionType: "click",
+   *   engagementType: "link_click",
    * });
    * ```
    */
@@ -171,7 +171,7 @@ export class MCPSessionTracker {
     externalSessionId: string | undefined,
     urls: string[],
     options: {
-      interactionType?: "click" | "view" | "expand" | "share";
+      engagementType?: EngagementType;
     } = {},
   ): Promise<void> {
     if (urls.length === 0) return;
@@ -186,8 +186,8 @@ export class MCPSessionTracker {
       sourceRole: "agent" as const,
       contentUrl: url,
       data: {
-        ...(options.interactionType != null && {
-          interaction_type: options.interactionType,
+        ...(options.engagementType != null && {
+          engagement_type: options.engagementType,
         }),
       },
     }));

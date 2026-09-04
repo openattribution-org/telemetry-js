@@ -20,7 +20,7 @@ import type {
 const TRANSIENT_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
 /** Content Telemetry schema version emitted on wire documents (spec 7.1). */
-const SCHEMA_VERSION = "0.1";
+const SCHEMA_VERSION = "1.0";
 
 // ---------------------------------------------------------------------------
 // Wire format helpers (camelCase → snake_case for the JSON body)
@@ -67,6 +67,11 @@ function eventToWire(event: TelemetryEvent): Record<string, unknown> {
     content_url: event.contentUrl,
     content_id: event.contentId,
     license_ref: event.licenseRef,
+    output_id: event.outputId,
+    output_element_id: event.outputElementId,
+    citation_id: event.citationId,
+    presentation_id: event.presentationId,
+    ctx_token: event.ctxToken,
     product_id: event.productId,
     turn: event.turn != null ? turnToWire(event.turn) : undefined,
     data: event.data ?? {},
@@ -221,28 +226,32 @@ export class TelemetryClient {
 
   /**
    * Record a single telemetry event.
+   *
+   * A UUID `id` is generated when the caller does not supply one, so
+   * `content_cited` and `content_presented` events always carry the `id`
+   * v1 requires (spec 6.5, 6.6). The generated id is returned so callers
+   * can wire it into later events (`citation_id`, `presentation_id`).
+   *
+   * @returns The event's id, or null when no session is active.
    */
   async recordEvent(
     sessionId: string | null,
     eventType: EventType,
-    options: {
-      contentUrl?: string;
-      productId?: string;
-      sourceRole?: SourceRole;
-      contentTelemetryId?: string;
-      turn?: ConversationTurn;
-      data?: Record<string, unknown>;
+    options: Omit<TelemetryEvent, "type" | "timestamp"> & {
+      timestamp?: string;
     } = {},
-  ): Promise<void> {
-    if (sessionId == null) return;
+  ): Promise<string | null> {
+    if (sessionId == null) return null;
+    const id = options.id ?? crypto.randomUUID();
     await this.recordEvents(sessionId, [
       {
-        id: crypto.randomUUID(),
-        type: eventType,
         timestamp: new Date().toISOString(),
         ...options,
+        id,
+        type: eventType,
       },
     ]);
+    return id;
   }
 
   /**
@@ -264,6 +273,43 @@ export class TelemetryClient {
       schema_version: SCHEMA_VERSION,
       session_id: sessionId,
       events: stamped.map(eventToWire),
+    });
+  }
+
+  /**
+   * Record a standalone event envelope (spec 7.1) - a single event with
+   * no session context, or one carried by a `ctx_token` instead of a
+   * session. This is the delivery format for origin- and edge-side
+   * emitters observing a fetch, and for destination-reported click-out
+   * engagements.
+   *
+   * At Grounding conformance and above the envelope must carry
+   * `sessionId` (or `ctxToken` for click-out engagements) together with
+   * `agentId` and `startedAt` (spec 5.7.2); a session-less origin or
+   * edge retrieval omits all three.
+   */
+  async recordStandaloneEvent(
+    event: TelemetryEvent,
+    envelope: {
+      sessionId?: string;
+      ctxToken?: string;
+      agentId?: string;
+      startedAt?: string;
+    } = {},
+  ): Promise<void> {
+    const defaultRole = this.defaultSourceRole;
+    const stamped =
+      event.sourceRole == null && defaultRole != null
+        ? { ...event, sourceRole: defaultRole }
+        : event;
+    await this.post("/events", {
+      document_type: "event",
+      schema_version: SCHEMA_VERSION,
+      session_id: envelope.sessionId,
+      ctx_token: envelope.ctxToken,
+      agent_id: envelope.agentId,
+      started_at: envelope.startedAt,
+      event: eventToWire(stamped),
     });
   }
 
@@ -339,5 +385,6 @@ function sessionToWire(session: TelemetrySession): Record<string, unknown> {
     events: session.events.map(eventToWire),
     outcome:
       session.outcome != null ? outcomeToWire(session.outcome) : undefined,
+    data: session.data,
   };
 }

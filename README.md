@@ -2,7 +2,7 @@
 
 TypeScript/JavaScript SDK for the [Content Telemetry](https://github.com/SPUR-Coalition/telemetry) standard — track content attribution in AI agent interactions.
 
-SDK versions track the standard: 0.1.x implements Content Telemetry 0.1.
+SDK versions track the standard: 1.0.x implements Content Telemetry 1.0.
 
 Works in Node.js >= 20, Deno, browsers, and Edge runtimes (Vercel, Cloudflare Workers). Zero runtime dependencies.
 
@@ -158,10 +158,21 @@ await ucpClient.completeCheckout({
 
 ## Tracking the full funnel
 
+Engagements bind to the exact presentation the user acted on (spec 6.7):
+`trackCited` and `trackPresented` return URL → event-id maps, and the
+presentation map feeds `trackEngaged`.
+
 ```ts
 await tracker.trackRetrieved(sessionId, productUrls);
-await tracker.trackCited(sessionId, citedUrls, { citationType: "reference" });
-await tracker.trackEngaged(sessionId, [clickedUrl], { engagementType: "link_click" });
+const citationIds = await tracker.trackCited(sessionId, citedUrls, { citationType: "reference" });
+const presentationIds = await tracker.trackPresented(sessionId, citedUrls, {
+  presentationType: "link",
+  citationIds: citationIds ?? undefined,
+});
+await tracker.trackEngaged(sessionId, [clickedUrl], {
+  engagementType: "link_click",
+  presentationIds: presentationIds ?? undefined,
+});
 await tracker.trackCheckout(sessionId, { type: "completed", valueAmount: 4999, currency: "USD" });
 ```
 

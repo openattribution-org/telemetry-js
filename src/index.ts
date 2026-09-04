@@ -60,10 +60,13 @@ export type {
   EngagementType,
   ConformanceLevel,
   ResponseMode,
-  BotCategory,
+  AccessPurpose,
+  PresentationKind,
+  PresentationType,
   CacheStatus,
   // Data profiles
   CitationData,
+  PresentationData,
   EdgeEnrichment,
   OriginEnrichment,
 } from "./types.js";

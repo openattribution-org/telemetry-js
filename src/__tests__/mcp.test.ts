@@ -74,6 +74,54 @@ describe("MCPSessionTracker.trackCited", () => {
     expect(events[0].type).toBe("content_cited")
     expect(events[0].contentUrl).toBe("https://a.com")
   })
+
+  it("always carries id, outputId and citation_type per spec 6.5", async () => {
+    const t = tracker()
+    const ids = await t.trackCited("user-abc", ["https://a.com"])
+    const [, events] = mockClient.recordEvents.mock.calls[0]!
+    expect(events[0].id).toBeTruthy()
+    expect(events[0].outputId).toMatch(/^response:/)
+    expect(events[0].data.citation_type).toBe("unclassified")
+    expect(ids).toEqual({ "https://a.com": events[0].id })
+  })
+
+  it("uses the supplied outputId and citationType", async () => {
+    const t = tracker()
+    await t.trackCited("user-abc", ["https://a.com"], {
+      citationType: "reference",
+      outputId: "response:42",
+    })
+    const [, events] = mockClient.recordEvents.mock.calls[0]!
+    expect(events[0].outputId).toBe("response:42")
+    expect(events[0].data.citation_type).toBe("reference")
+  })
+})
+
+describe("MCPSessionTracker.trackPresented", () => {
+  it("emits content_presented with required presentation data per spec 6.6", async () => {
+    const t = tracker()
+    const ids = await t.trackPresented("user-abc", ["https://a.com"], {
+      citationIds: { "https://a.com": "cite-1" },
+      outputId: "response:42",
+    })
+    const [, events] = mockClient.recordEvents.mock.calls[0]!
+    expect(events[0].type).toBe("content_presented")
+    expect(events[0].id).toBeTruthy()
+    expect(events[0].outputId).toBe("response:42")
+    expect(events[0].citationId).toBe("cite-1")
+    expect(events[0].data).toEqual({
+      presentation_kind: "source_reference",
+      presentation_type: "link",
+    })
+    expect(ids).toEqual({ "https://a.com": events[0].id })
+  })
+
+  it("omits citationId for uncited presentations", async () => {
+    const t = tracker()
+    await t.trackPresented("user-abc", ["https://a.com"])
+    const [, events] = mockClient.recordEvents.mock.calls[0]!
+    expect("citationId" in events[0]).toBe(false)
+  })
 })
 
 describe("MCPSessionTracker.trackEngaged", () => {
@@ -92,6 +140,16 @@ describe("MCPSessionTracker.trackEngaged", () => {
     await t.trackEngaged("user-abc", ["https://a.com"])
     const [, events] = mockClient.recordEvents.mock.calls[0]!
     expect(events[0].data).toEqual({})
+  })
+
+  it("binds the engagement to its presentation per spec 6.7", async () => {
+    const t = tracker()
+    await t.trackEngaged("user-abc", ["https://a.com"], {
+      engagementType: "link_click",
+      presentationIds: { "https://a.com": "pres-1" },
+    })
+    const [, events] = mockClient.recordEvents.mock.calls[0]!
+    expect(events[0].presentationId).toBe("pres-1")
   })
 })
 
